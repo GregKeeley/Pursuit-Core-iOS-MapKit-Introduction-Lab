@@ -9,7 +9,13 @@
 import Foundation
 
 struct PublicSchool: Codable {
-    let school_name: String
+    let schoolName: String
     let latitude: String
     let longitude: String
+    private enum CodingKeys: String, CodingKey {
+        case schoolName = "school_name"
+        case latitude
+        case longitude
+    }
+    
 }

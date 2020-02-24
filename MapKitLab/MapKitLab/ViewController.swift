@@ -8,6 +8,7 @@
 
 import UIKit
 import MapKit
+import NetworkHelper
 
 class ViewController: UIViewController {
 
@@ -15,6 +16,14 @@ class ViewController: UIViewController {
     private let locationSession = CoreLocationSession()
     private var userTrackingButton: MKUserTrackingButton!
     private var annotations = [MKPointAnnotation]()
+    
+    private var publicSchools = [PublicSchool]() {
+        didSet {
+            dump(self.publicSchools)
+           annotations = loadSchoolAnnotations()
+            mapView.addAnnotations(annotations)
+        }
+    }
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -26,6 +35,7 @@ class ViewController: UIViewController {
         userTrackingButton.layer.cornerRadius = 4
         mapView.addSubview(userTrackingButton)
         loadMap()
+        getSchools()
     }
     private func makeAnnotations() -> [MKPointAnnotation] {
         var annotations = [MKPointAnnotation]()
@@ -42,5 +52,33 @@ class ViewController: UIViewController {
         let annotations = makeAnnotations()
         mapView.addAnnotations(annotations)
     }
+    
+    private func getSchools() {
+        GenericCoderAPI.manager.getJSON(objectType: [PublicSchool].self, with: "https://data.cityofnewyork.us/resource/uq7m-95z8.json") { (results) in
+            switch results {
+            case .failure(let appError):
+                print("error: \(appError)")
+            case .success(let schoolData):
+                DispatchQueue.main.async {
+                self.publicSchools = schoolData
+                }
+            }
+        }
+    }
+    private func loadSchoolAnnotations() -> [MKPointAnnotation] {
+        var annotations = [MKPointAnnotation]()
+        for school in publicSchools {
+            let annotation = MKPointAnnotation()
+            let latitude = Double(school.latitude)!
+            let longitude = Double(school.longitude)
+            let schoolCoordinate = CLLocationCoordinate2D(latitude: latitude, longitude: longitude!)
+            annotation.coordinate = schoolCoordinate
+            annotation.title = school.schoolName
+            annotations.append(annotation)
+        }
+        return annotations
+    }
 }
-
+extension ViewController: MKMapViewDelegate {
+    
+}
